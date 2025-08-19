@@ -1,5 +1,8 @@
 package com.yohwan.tcp.bank
 
+import com.yohwan.tcp.bank.BankServerConfig.RESPONSE_SIZE
+import com.yohwan.tcp.bank.BankServerConfig.SERVER_HOST
+import com.yohwan.tcp.bank.BankServerConfig.SERVER_PORT
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.integration.annotation.ServiceActivator
@@ -13,11 +16,6 @@ import org.springframework.messaging.MessageHandler
 @Configuration
 class BankTcpConfig {
 
-    companion object {
-        private const val SERVER_HOST = "127.0.0.1"
-        private const val SERVER_PORT = 9999
-    }
-
     @Bean
     fun bankRequestChannel(): MessageChannel = DirectChannel()
 
@@ -26,7 +24,7 @@ class BankTcpConfig {
         val factory = TcpNetClientConnectionFactory(SERVER_HOST, SERVER_PORT)
         factory.isSingleUse = true  // 요청마다 소켓을 열고 닫음
         factory.serializer = ByteArrayRawSerializer()
-        factory.deserializer = FixedLengthByteArrayDeserializer(50)
+        factory.deserializer = FixedLengthByteArrayDeserializer(RESPONSE_SIZE)
         return factory
     }
 

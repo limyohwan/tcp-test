@@ -1,5 +1,8 @@
 package com.yohwan.tcp.bank
 
+import com.yohwan.tcp.bank.BankServerConfig.RESPONSE_SIZE
+import com.yohwan.tcp.bank.BankServerConfig.SERVER_HOST
+import com.yohwan.tcp.bank.BankServerConfig.SERVER_PORT
 import io.netty.bootstrap.Bootstrap
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
@@ -27,8 +30,6 @@ class BankService(
 ) {
 
     companion object {
-        private const val SERVER_HOST = "127.0.0.1"
-        private const val SERVER_PORT = 9999
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
@@ -48,7 +49,7 @@ class BankService(
 
                 val input = socket.getInputStream()
 
-                val bodyResponse = ByteArray(50)
+                val bodyResponse = ByteArray(RESPONSE_SIZE)
                 input.read(bodyResponse)
 
                 String(bodyResponse, StandardCharsets.US_ASCII)
@@ -91,7 +92,7 @@ class BankService(
                         pipeline.addLast(ReadTimeoutHandler(10, TimeUnit.SECONDS))
                         pipeline.addLast(object : SimpleChannelInboundHandler<ByteBuf>() {
 
-                            private val responseBuf = ByteArray(50)
+                            private val responseBuf = ByteArray(RESPONSE_SIZE)
                             private var readBytes = 0
 
                             override fun channelActive(ctx: ChannelHandlerContext) {
@@ -101,7 +102,7 @@ class BankService(
 
                             override fun channelRead0(ctx: ChannelHandlerContext, msg: ByteBuf) {
                                 val readable = msg.readableBytes()
-                                val toRead = minOf(50 - readBytes, readable)
+                                val toRead = minOf(RESPONSE_SIZE - readBytes, readable)
                                 msg.readBytes(responseBuf, readBytes, toRead)
                                 readBytes += toRead
 
@@ -140,22 +141,25 @@ class BankService(
         messageNumber: String,
         accountNumber: String
     ): ByteBuffer {
+        val messageTypeCodeLength = 4
+        val messageNumberLength = 6
+        val accountNumberLength = 15
 
-        val paddedMessageTypeCode = padLeft(messageTypeCode, 4, '0')
-        val paddedMessageNumber = padLeft(messageNumber, 6, '0')
-        val paddedAccountNumber = padRight(accountNumber, 15, ' ')
+        val paddedMessageTypeCode = padLeft(messageTypeCode, messageTypeCodeLength, '0')
+        val paddedMessageNumber = padLeft(messageNumber, messageNumberLength, '0')
+        val paddedAccountNumber = padRight(accountNumber, accountNumberLength, ' ')
 
-        val totalLength = 4 + 6 + 15
+        val totalLength = messageTypeCodeLength + messageNumberLength + accountNumberLength
 
         val buffer = ByteBuffer.allocate(totalLength)
 
-        val messageTypeCodeBuffer = ByteBuffer.allocate(4)
+        val messageTypeCodeBuffer = ByteBuffer.allocate(messageTypeCodeLength)
         messageTypeCodeBuffer.put(paddedMessageTypeCode.toByteArray(StandardCharsets.US_ASCII))
 
-        val messageNumberBuffer = ByteBuffer.allocate(6)
+        val messageNumberBuffer = ByteBuffer.allocate(messageNumberLength)
         messageNumberBuffer.put(paddedMessageNumber.toByteArray(StandardCharsets.US_ASCII))
 
-        val accountNumberBuffer = ByteBuffer.allocate(15)
+        val accountNumberBuffer = ByteBuffer.allocate(accountNumberLength)
         accountNumberBuffer.put(paddedAccountNumber.toByteArray(StandardCharsets.UTF_8))
 
         buffer.put(messageTypeCodeBuffer.array())
