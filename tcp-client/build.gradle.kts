@@ -20,7 +20,9 @@ repositories {
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-integration")
+	implementation("org.springframework.integration:spring-integration-ip")
 	implementation("org.springframework.boot:spring-boot-starter-web")
+	implementation("io.netty:netty-all:4.1.99.Final")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.springframework.integration:spring-integration-http")
