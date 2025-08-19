@@ -33,7 +33,7 @@ class BankService(
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    fun sendTransactionV1(header: BankCommonHeader, message: BankRequestMessage): String {
+    fun sendTransactionV1(header: BankCommonHeader, message: BankRequestMessage): BankResponseMessage {
         log.info("sendTransactionV1: use socket")
         return Socket(SERVER_HOST, SERVER_PORT).use { socket ->
             try {
@@ -52,14 +52,14 @@ class BankService(
                 val bodyResponse = ByteArray(RESPONSE_SIZE)
                 input.read(bodyResponse)
 
-                String(bodyResponse, StandardCharsets.US_ASCII)
+                createResponseMessage(bodyResponse)
             } catch (e: IOException) {
                 throw RuntimeException("TCP 통신 오류: ${e.message}", e)
             }
         }
     }
 
-    fun sendTransactionV2(header: BankCommonHeader, message: BankRequestMessage): String {
+    fun sendTransactionV2(header: BankCommonHeader, message: BankRequestMessage): BankResponseMessage {
         log.info("sendTransactionV2: use spring integration")
         val requestBuffer = createRequestMessage(
             header.messageTypeCode.toString(),
@@ -67,10 +67,10 @@ class BankService(
             message.accountNumber
         )
 
-        return String(bankGateway.sendTransaction(requestBuffer.array()), StandardCharsets.US_ASCII)
+        return createResponseMessage(bankGateway.sendTransaction(requestBuffer.array()))
     }
 
-    fun sendTransactionV3(header: BankCommonHeader, message: BankRequestMessage): String {
+    fun sendTransactionV3(header: BankCommonHeader, message: BankRequestMessage): BankResponseMessage {
         log.info("sendTransactionV3: use netty")
         val requestBuffer = createRequestMessage(
             header.messageTypeCode.toString(),
@@ -122,7 +122,7 @@ class BankService(
                 })
 
             bootstrap.connect(SERVER_HOST, SERVER_PORT).sync()
-            return String(responseFuture.get(10, TimeUnit.SECONDS), StandardCharsets.US_ASCII)
+            return createResponseMessage(responseFuture.get(10, TimeUnit.SECONDS))
         } finally {
             group.shutdownGracefully()
         }
@@ -169,5 +169,45 @@ class BankService(
         buffer.flip()
 
         return buffer
+    }
+
+    fun createResponseMessage(
+        tcpResponse: ByteArray
+    ): BankResponseMessage {
+        val messageTypeCodeLength = 4
+        val messageNumberLength = 6
+        val accountNumberLength = 15
+        val balanceLength = 15
+        val reservedLength = 10
+
+        val buffer = ByteBuffer.wrap(tcpResponse)
+
+        val messageTypeCodeBytes = ByteArray(messageTypeCodeLength)
+        buffer.get(messageTypeCodeBytes)
+        val messageTypeCode = String(messageTypeCodeBytes, StandardCharsets.US_ASCII).trim()
+
+        val messageNumberBytes = ByteArray(messageNumberLength)
+        buffer.get(messageNumberBytes)
+        val messageNumber = String(messageNumberBytes, StandardCharsets.US_ASCII).trim()
+
+        val accountNumberBytes = ByteArray(accountNumberLength)
+        buffer.get(accountNumberBytes)
+        val accountNumber = String(accountNumberBytes, StandardCharsets.UTF_8).trim()
+
+        val balanceBytes = ByteArray(balanceLength)
+        buffer.get(balanceBytes)
+        val balance = String(balanceBytes, StandardCharsets.UTF_8).trim()
+
+        val reservedBytes = ByteArray(reservedLength)
+        buffer.get(reservedBytes)
+        val reserved = String(reservedBytes, StandardCharsets.UTF_8).trim()
+
+        return BankResponseMessage(
+            messageTypeCode = messageTypeCode.trimStart('0').toInt(),
+            messageNumber = messageNumber.trimStart('0').toInt(),
+            accountNumber = accountNumber,
+            balance = balance,
+            reserved = reserved
+        )
     }
 }

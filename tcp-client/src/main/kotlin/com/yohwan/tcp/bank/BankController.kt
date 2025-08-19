@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController
 class BankController(private val bankService: BankService) {
 
     @GetMapping("/api/v1/bank/balance/{accountNumber}")
-    fun checkBalanceV1(@PathVariable accountNumber: String): String {
+    fun checkBalanceV1(@PathVariable accountNumber: String): BankResponseMessage {
         val header = BankCommonHeader(
             messageTypeCode = 1001,
             messageNumber = 1
@@ -20,7 +20,7 @@ class BankController(private val bankService: BankService) {
     }
 
     @GetMapping("/api/v2/bank/balance/{accountNumber}")
-    fun checkBalanceV2(@PathVariable accountNumber: String): String {
+    fun checkBalanceV2(@PathVariable accountNumber: String): BankResponseMessage {
         val header = BankCommonHeader(
             messageTypeCode = 1001,
             messageNumber = 1
@@ -32,7 +32,7 @@ class BankController(private val bankService: BankService) {
     }
 
     @GetMapping("/api/v3/bank/balance/{accountNumber}")
-    fun checkBalanceV3(@PathVariable accountNumber: String): String {
+    fun checkBalanceV3(@PathVariable accountNumber: String): BankResponseMessage {
         val header = BankCommonHeader(
             messageTypeCode = 1001,
             messageNumber = 1
