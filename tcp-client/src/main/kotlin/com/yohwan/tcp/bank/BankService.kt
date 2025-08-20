@@ -1,5 +1,10 @@
 package com.yohwan.tcp.bank
 
+import com.yohwan.tcp.bank.BankServerConfig.ACCOUNT_NUMBER_LENGTH
+import com.yohwan.tcp.bank.BankServerConfig.BALANCE_LENGTH
+import com.yohwan.tcp.bank.BankServerConfig.MESSAGE_NUMBER_LENGTH
+import com.yohwan.tcp.bank.BankServerConfig.MESSAGE_TYPE_CODE_LENGTH
+import com.yohwan.tcp.bank.BankServerConfig.RESERVED_LENGTH
 import com.yohwan.tcp.bank.BankServerConfig.RESPONSE_SIZE
 import com.yohwan.tcp.bank.BankServerConfig.SERVER_HOST
 import com.yohwan.tcp.bank.BankServerConfig.SERVER_PORT
@@ -141,25 +146,21 @@ class BankService(
         messageNumber: String,
         accountNumber: String
     ): ByteBuffer {
-        val messageTypeCodeLength = 4
-        val messageNumberLength = 6
-        val accountNumberLength = 15
+        val paddedMessageTypeCode = padLeft(messageTypeCode, MESSAGE_TYPE_CODE_LENGTH, '0')
+        val paddedMessageNumber = padLeft(messageNumber, MESSAGE_NUMBER_LENGTH, '0')
+        val paddedAccountNumber = padRight(accountNumber, ACCOUNT_NUMBER_LENGTH, ' ')
 
-        val paddedMessageTypeCode = padLeft(messageTypeCode, messageTypeCodeLength, '0')
-        val paddedMessageNumber = padLeft(messageNumber, messageNumberLength, '0')
-        val paddedAccountNumber = padRight(accountNumber, accountNumberLength, ' ')
-
-        val totalLength = messageTypeCodeLength + messageNumberLength + accountNumberLength
+        val totalLength = MESSAGE_TYPE_CODE_LENGTH + MESSAGE_NUMBER_LENGTH + ACCOUNT_NUMBER_LENGTH
 
         val buffer = ByteBuffer.allocate(totalLength)
 
-        val messageTypeCodeBuffer = ByteBuffer.allocate(messageTypeCodeLength)
+        val messageTypeCodeBuffer = ByteBuffer.allocate(MESSAGE_TYPE_CODE_LENGTH)
         messageTypeCodeBuffer.put(paddedMessageTypeCode.toByteArray(StandardCharsets.US_ASCII))
 
-        val messageNumberBuffer = ByteBuffer.allocate(messageNumberLength)
+        val messageNumberBuffer = ByteBuffer.allocate(MESSAGE_NUMBER_LENGTH)
         messageNumberBuffer.put(paddedMessageNumber.toByteArray(StandardCharsets.US_ASCII))
 
-        val accountNumberBuffer = ByteBuffer.allocate(accountNumberLength)
+        val accountNumberBuffer = ByteBuffer.allocate(ACCOUNT_NUMBER_LENGTH)
         accountNumberBuffer.put(paddedAccountNumber.toByteArray(StandardCharsets.UTF_8))
 
         buffer.put(messageTypeCodeBuffer.array())
@@ -174,31 +175,25 @@ class BankService(
     fun createResponseMessage(
         tcpResponse: ByteArray
     ): BankResponseMessage {
-        val messageTypeCodeLength = 4
-        val messageNumberLength = 6
-        val accountNumberLength = 15
-        val balanceLength = 15
-        val reservedLength = 10
-
         val buffer = ByteBuffer.wrap(tcpResponse)
 
-        val messageTypeCodeBytes = ByteArray(messageTypeCodeLength)
+        val messageTypeCodeBytes = ByteArray(MESSAGE_TYPE_CODE_LENGTH)
         buffer.get(messageTypeCodeBytes)
         val messageTypeCode = String(messageTypeCodeBytes, StandardCharsets.US_ASCII).trim()
 
-        val messageNumberBytes = ByteArray(messageNumberLength)
+        val messageNumberBytes = ByteArray(MESSAGE_NUMBER_LENGTH)
         buffer.get(messageNumberBytes)
         val messageNumber = String(messageNumberBytes, StandardCharsets.US_ASCII).trim()
 
-        val accountNumberBytes = ByteArray(accountNumberLength)
+        val accountNumberBytes = ByteArray(ACCOUNT_NUMBER_LENGTH)
         buffer.get(accountNumberBytes)
         val accountNumber = String(accountNumberBytes, StandardCharsets.UTF_8).trim()
 
-        val balanceBytes = ByteArray(balanceLength)
+        val balanceBytes = ByteArray(BALANCE_LENGTH)
         buffer.get(balanceBytes)
         val balance = String(balanceBytes, StandardCharsets.UTF_8).trim()
 
-        val reservedBytes = ByteArray(reservedLength)
+        val reservedBytes = ByteArray(RESERVED_LENGTH)
         buffer.get(reservedBytes)
         val reserved = String(reservedBytes, StandardCharsets.UTF_8).trim()
 
