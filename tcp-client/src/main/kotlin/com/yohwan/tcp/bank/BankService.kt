@@ -133,15 +133,15 @@ class BankService(
         }
     }
 
-    fun padLeft(input: String, length: Int, padChar: Char ): String {
+    private fun padLeft(input: String, length: Int, padChar: Char ): String {
         return input.padStart(length, padChar)
     }
 
-    fun padRight(input: String, length: Int, padChar: Char): String {
+    private fun padRight(input: String, length: Int, padChar: Char): String {
         return input.padEnd(length, padChar)
     }
 
-    fun createRequestMessage(
+    private fun createRequestMessage(
         messageTypeCode: String,
         messageNumber: String,
         accountNumber: String
@@ -172,7 +172,7 @@ class BankService(
         return buffer
     }
 
-    fun createResponseMessage(
+    private fun createResponseMessage(
         tcpResponse: ByteArray
     ): BankResponseMessage {
         val buffer = ByteBuffer.wrap(tcpResponse)
